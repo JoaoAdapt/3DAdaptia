@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Adaptia 3D — RPG da Adapt</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<!-- TELA INICIAL -->
+<section id="screen-start" class="overlay center">
+  <div class="panel start-panel">
+    <span class="eyebrow">⚜️ Adaptia Tools · Edição 3D</span>
+    <h1>Adaptia <span class="accent">3D</span></h1>
+    <p class="tagline">O escritório nunca foi tão perigoso assim. Agora em três dimensões.</p>
+    <button id="btn-start" class="primary big">Criar Herói →</button>
+    <p class="footnote">Mesma linhagem, classe e sinergias do Livro de Regras v1 — agora com vila explorável e árvore de habilidades em 3D.</p>
+  </div>
+</section>
+
+<!-- CRIADOR DE PERSONAGEM -->
+<section id="screen-creator" class="overlay hidden">
+  <div class="creator-layout">
+    <div class="creator-preview">
+      <span class="preview-label" id="creator-preview-label">Seu herói</span>
+      <span class="preview-hint">Arraste para girar</span>
+    </div>
+    <div class="creator-panel panel" id="creator-form"></div>
+  </div>
+</section>
+
+<!-- HUD DA VILA -->
+<div id="hud-village" class="overlay hidden">
+  <div class="hud-top">
+    <div class="hud-card">
+      <strong id="hud-name">—</strong>
+      <span id="hud-class">—</span>
+      <div class="hud-stats">
+        <span>Nível <b id="hud-level">1</b></span>
+        <span>PV <b id="hud-pv">0</b></span>
+        <span id="hud-mana-wrap" class="hidden">Mana <b id="hud-mana">0</b></span>
+      </div>
+    </div>
+    <div class="hud-card level-card">
+      <label for="level-slider">Simular nível (demo)</label>
+      <input type="range" id="level-slider" min="1" max="20" value="1" />
+      <span class="level-readout">Nv <b id="level-value">1</b> · XP necessário <b id="xp-value">20</b></span>
+    </div>
+  </div>
+  <div class="hud-bottom">
+    <span class="controls-hint">WASD para mover · arraste o mouse para girar a câmera · E para interagir</span>
+  </div>
+  <div id="prompt-building" class="prompt hidden"></div>
+  <div id="prompt-interact" class="prompt interact hidden">
+    🌳 Pressione <b>E</b> ou toque para abrir a Árvore das Habilidades
+    <button id="btn-interact-totem" class="small">Abrir</button>
+  </div>
+</div>
+
+<!-- ÁRVORE DE HABILIDADES -->
+<section id="screen-skilltree" class="overlay hidden">
+  <div class="skilltree-top">
+    <h2>🌳 Árvore das Habilidades</h2>
+    <button id="btn-close-skilltree" class="ghost">Fechar ✕</button>
+  </div>
+  <p class="skilltree-hint">Nós dourados são habilidades já desbloqueadas no nível simulado atual. Passe o mouse sobre um nó para ver o efeito.</p>
+  <div id="skill-tooltip" class="skill-tooltip"></div>
+</section>
+
+<script src="bundle.js"></script>
+</body>
+</html>

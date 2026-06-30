@@ -1,0 +1,18 @@
+{
+  "name": "adaptia-3d",
+  "version": "1.0.0",
+  "description": "Adaptia 3D — RPG da Adapt em três dimensões: criação de personagem, sistema de classes/linhagens, árvore de habilidades e vila inicial explorável.",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=iife --outfile=bundle.js",
+    "watch": "esbuild src/main.js --bundle --format=iife --outfile=bundle.js --watch",
+    "serve": "python3 -m http.server 8080"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
