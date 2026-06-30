@@ -3,7 +3,15 @@
 Versão 3D do RPG interno da Adapt. Mesmo sistema de fichas do Livro de Regras v1
 (8 linhagens/setores, 12 classes, sinergias, atributos) — agora com criação de
 personagem em 3D, árvore de habilidades em 3D e uma vila inicial explorável a
-pé, com prédio para cada setor da agência.
+pé, com prédio para cada setor da agência, em estilo medieval (enxaimel, telhado
+de capim, pedra, tochas).
+
+**v2:** repaginação visual completa — personagem refeito com proporções
+corretas (pés tocam o chão, juntas suavizadas, arma na mão do jeito certo),
+prédios com telhado de base quadrada (sem mais encaixe torto entre parede e
+telhado), texturas procedurais de pedra/madeira/capim/grama/paralelepípedo,
+céu em gradiente de entardecer, iluminação dourada e brilho mágico (bloom) nos
+cristais da árvore de habilidades, tochas e fonte.
 
 Não depende de servidor, conta ou internet para rodar: tudo roda 100% no
 navegador, com o Three.js já embutido em `bundle.js`. `npm`/internet só são

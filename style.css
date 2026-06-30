@@ -55,10 +55,14 @@ h1, h2, h3, .eyebrow, .preview-label {
 .center { display: flex; align-items: center; justify-content: center; }
 
 .panel {
-  background: linear-gradient(180deg, rgba(20,23,31,0.92), rgba(14,16,22,0.96));
-  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 140% at 50% -10%, rgba(250,204,21,0.07), transparent 55%),
+    linear-gradient(180deg, rgba(22,19,26,0.95), rgba(13,11,16,0.97));
+  border: 1px solid rgba(250,204,21,0.28);
+  outline: 1px solid rgba(0,0,0,0.5);
+  outline-offset: -5px;
   border-radius: var(--radius);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
   backdrop-filter: blur(6px);
 }
 
@@ -72,13 +76,15 @@ h1, h2, h3, .eyebrow, .preview-label {
   color: var(--gold);
   font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 14px rgba(250,204,21,0.4);
 }
 
 .start-panel h1 {
-  font-size: 56px;
+  font-size: 58px;
   margin: 10px 0 6px;
   font-weight: 700;
+  text-shadow: 0 0 28px rgba(250,204,21,0.25), 0 2px 0 rgba(0,0,0,0.4);
 }
 
 .accent { color: var(--teal); }
@@ -92,15 +98,16 @@ button {
 }
 
 .primary {
-  background: linear-gradient(135deg, var(--teal), #14b8a6);
+  background: linear-gradient(180deg, #5eead4, var(--teal) 55%, #0d9488);
   color: #06281f;
   font-weight: 700;
   padding: 12px 22px;
   border-radius: 10px;
   font-size: 16px;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.25) inset, 0 -2px 6px rgba(0,0,0,0.25) inset, 0 6px 16px rgba(13,148,136,0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(45,212,191,0.35); }
+.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 2px 0 rgba(255,255,255,0.3) inset, 0 10px 26px rgba(45,212,191,0.4); }
 .primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .primary.big { padding: 16px 32px; font-size: 18px; }
@@ -201,7 +208,7 @@ button {
 
 .opt-card {
   --accent: #2dd4bf;
-  background: var(--panel-2);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.12)), var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
@@ -210,10 +217,14 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: border-color 0.15s ease, transform 0.1s ease;
+  transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .opt-card:hover { transform: translateY(-1px); border-color: var(--accent); }
-.opt-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: color-mix(in srgb, var(--accent) 12%, var(--panel-2)); }
+.opt-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 0 16px -2px var(--accent);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.12)), color-mix(in srgb, var(--accent) 14%, var(--panel-2));
+}
 .opt-card strong { font-size: 14.5px; }
 .opt-card span { font-size: 11.5px; color: var(--muted); }
 .opt-card span.muted { color: var(--accent); }
@@ -325,11 +336,12 @@ button {
   gap: 12px;
 }
 .hud-card {
-  background: rgba(15,17,23,0.78);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(26,20,16,0.85), rgba(13,11,16,0.82));
+  border: 1px solid rgba(250,204,21,0.22);
   border-radius: 12px;
   padding: 12px 16px;
   backdrop-filter: blur(4px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.4);
 }
 .hud-card strong { display: block; font-size: 18px; }
 .hud-card span { color: var(--muted); font-size: 12.5px; }
@@ -414,12 +426,13 @@ button {
   display: none;
   z-index: 20;
   max-width: 260px;
-  background: rgba(12,13,18,0.95);
+  background: linear-gradient(180deg, rgba(20,16,10,0.96), rgba(10,9,14,0.97));
   border: 1px solid var(--gold);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13px;
   pointer-events: none;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 20px -4px rgba(250,204,21,0.35);
 }
 .skill-tooltip strong { display: block; color: var(--gold); margin-bottom: 4px; }
 .skill-tooltip .tag { color: var(--muted); font-size: 11px; display: block; margin-bottom: 6px; }

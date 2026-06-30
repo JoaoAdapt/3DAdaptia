@@ -1,9 +1,14 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { buildCharacter, animateCharacter } from './character.js';
 import { buildVillage } from './village.js';
 import { buildSkillTree, updateNodeStates, spinTree } from './skilltree.js';
 import { CreatorUI } from './ui.js';
 import { CLASSES, LINEAGES, xpForLevel } from './data.js';
+import { skyGradientTexture, glowSpriteTexture } from './textures.js';
 
 const canvas = document.getElementById('game-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -11,15 +16,27 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 220);
+
+function makeComposer(scene, bloomStrength, bloomThreshold, bloomRadius) {
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), bloomStrength, bloomRadius, bloomThreshold);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+  return composer;
+}
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  [creatorComposer, villageComposer, skillComposer].forEach(c => c && c.setSize(w, h));
 }
-
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
 window.addEventListener('resize', resize);
 
 // ============================================================
@@ -30,35 +47,71 @@ let charCfg = null;
 let demoLevel = 1;
 
 // ============================================================
-// CENA: Criador de personagem
+// CENA: Criador de personagem — salão dos heróis, à luz de velas
 // ============================================================
 const creatorScene = new THREE.Scene();
-creatorScene.background = new THREE.Color('#11141a');
-creatorScene.fog = new THREE.Fog('#11141a', 6, 16);
+creatorScene.background = new THREE.Color('#100c10');
+creatorScene.fog = new THREE.Fog('#100c10', 6, 15);
 
-const creatorAmbient = new THREE.AmbientLight('#8899bb', 0.7);
-const creatorKey = new THREE.DirectionalLight('#fff4da', 1.3);
-creatorKey.position.set(3, 5, 4);
+const creatorAmbient = new THREE.HemisphereLight('#5d5a72', '#1a1410', 0.55);
+const creatorKey = new THREE.DirectionalLight('#ffe2ad', 1.6);
+creatorKey.position.set(3, 5.5, 4);
 creatorKey.castShadow = true;
 creatorKey.shadow.mapSize.set(1024, 1024);
-const creatorRim = new THREE.PointLight('#2dd4bf', 1.2, 10);
-creatorRim.position.set(-3, 2, -3);
-creatorScene.add(creatorAmbient, creatorKey, creatorRim);
+creatorKey.shadow.camera.left = -5;
+creatorKey.shadow.camera.right = 5;
+creatorKey.shadow.camera.top = 5;
+creatorKey.shadow.camera.bottom = -5;
+const creatorRim = new THREE.PointLight('#7c5cff', 1.4, 9, 2);
+creatorRim.position.set(-3, 2.2, -3);
+const creatorFill = new THREE.PointLight('#ffb04d', 0.9, 8, 2);
+creatorFill.position.set(2.4, 1.2, -2.2);
+creatorScene.add(creatorAmbient, creatorKey, creatorRim, creatorFill);
+
+// piso do salão
+const hallFloor = new THREE.Mesh(
+  new THREE.CircleGeometry(6, 40),
+  new THREE.MeshStandardMaterial({ color: '#1a1620', roughness: 0.85, metalness: 0.1 })
+);
+hallFloor.rotation.x = -Math.PI / 2;
+hallFloor.receiveShadow = true;
+creatorScene.add(hallFloor);
 
 const pedestal = new THREE.Mesh(
-  new THREE.CylinderGeometry(1.1, 1.3, 0.3, 24),
-  new THREE.MeshStandardMaterial({ color: '#23262e', roughness: 0.6, metalness: 0.3 })
+  new THREE.CylinderGeometry(1.05, 1.3, 0.32, 28),
+  new THREE.MeshStandardMaterial({ color: '#26222c', roughness: 0.55, metalness: 0.35 })
 );
-pedestal.position.y = 0.0;
 pedestal.receiveShadow = true;
+pedestal.castShadow = true;
 creatorScene.add(pedestal);
 const pedestalRing = new THREE.Mesh(
-  new THREE.TorusGeometry(1.15, 0.04, 8, 32),
-  new THREE.MeshStandardMaterial({ color: '#facc15', emissive: '#facc15', emissiveIntensity: 0.6 })
+  new THREE.TorusGeometry(1.1, 0.045, 10, 36),
+  new THREE.MeshStandardMaterial({ color: '#facc15', emissive: '#facc15', emissiveIntensity: 1.1, roughness: 0.3, metalness: 0.6 })
 );
 pedestalRing.rotation.x = Math.PI / 2;
-pedestalRing.position.y = 0.16;
+pedestalRing.position.y = 0.17;
 creatorScene.add(pedestalRing);
+
+// pilares decorativos ao fundo
+for (let i = 0; i < 6; i++) {
+  const a = (i / 6) * Math.PI * 2;
+  const pillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.22, 3.4, 10),
+    new THREE.MeshStandardMaterial({ color: '#211c28', roughness: 0.8 })
+  );
+  pillar.position.set(Math.cos(a) * 5.4, 1.7, Math.sin(a) * 5.4);
+  pillar.castShadow = true;
+  creatorScene.add(pillar);
+  const flame = new THREE.Mesh(
+    new THREE.ConeGeometry(0.08, 0.2, 8),
+    new THREE.MeshStandardMaterial({ color: '#ffb04d', emissive: '#ff8a1f', emissiveIntensity: 1.8 })
+  );
+  flame.position.set(Math.cos(a) * 5.4, 3.55, Math.sin(a) * 5.4);
+  creatorScene.add(flame);
+  const torchLight = new THREE.PointLight('#ffa544', 1.0, 6, 2.2);
+  torchLight.position.copy(flame.position);
+  creatorScene.add(torchLight);
+}
 
 let creatorChar = null;
 let creatorYaw = 0.6;
@@ -67,11 +120,13 @@ const creatorCamera = camera;
 function setCreatorCharacter(cfg) {
   if (creatorChar) creatorScene.remove(creatorChar);
   creatorChar = buildCharacter(cfg);
-  creatorChar.position.y = 0.15;
+  creatorChar.position.y = 0.16;
   creatorScene.add(creatorChar);
 }
 
-// orbit-drag for creator preview
+const creatorComposer = makeComposer(creatorScene, 0.55, 0.35, 0.6);
+
+// orbit-drag para girar a câmera (criador e vila)
 let dragging = false, lastX = 0, lastY = 0;
 canvas.addEventListener('pointerdown', (e) => {
   if (mode !== 'creator' && mode !== 'village') return;
@@ -91,25 +146,54 @@ window.addEventListener('pointermove', (e) => {
 });
 
 // ============================================================
-// CENA: Vila inicial
+// CENA: Vila inicial — entardecer dourado
 // ============================================================
 const villageScene = new THREE.Scene();
-villageScene.background = new THREE.Color('#0d1117');
-villageScene.fog = new THREE.Fog('#0d1117', 18, 46);
+const skyTex = skyGradientTexture('#2c3a63', '#e8865c', '#fbd49b');
+villageScene.fog = new THREE.Fog('#e3a87a', 22, 50);
 
-const villageAmbient = new THREE.HemisphereLight('#9fb4d6', '#202418', 0.85);
-const villageSun = new THREE.DirectionalLight('#ffe8c2', 1.5);
-villageSun.position.set(12, 18, 8);
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(120, 24, 16),
+  new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })
+);
+villageScene.add(skyDome);
+
+const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowSpriteTexture('#ffd9a0'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+}));
+sunGlow.scale.set(22, 22, 1);
+sunGlow.position.set(-40, 22, -70);
+villageScene.add(sunGlow);
+
+// nuvens simples (sprites suaves)
+const cloudTex = glowSpriteTexture('#fff3e0');
+for (let i = 0; i < 10; i++) {
+  const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, transparent: true, opacity: 0.5, depthWrite: false }));
+  const a = Math.random() * Math.PI * 2;
+  const r = 50 + Math.random() * 40;
+  cloud.position.set(Math.cos(a) * r, 18 + Math.random() * 10, Math.sin(a) * r);
+  cloud.scale.set(14 + Math.random() * 10, 6 + Math.random() * 3, 1);
+  villageScene.add(cloud);
+}
+
+const villageAmbient = new THREE.HemisphereLight('#8fa3d6', '#5a4326', 0.7);
+const villageSun = new THREE.DirectionalLight('#ffcf9c', 1.85);
+villageSun.position.set(-20, 16, -28);
 villageSun.castShadow = true;
 villageSun.shadow.mapSize.set(2048, 2048);
 villageSun.shadow.camera.left = -36;
 villageSun.shadow.camera.right = 36;
 villageSun.shadow.camera.top = 36;
 villageSun.shadow.camera.bottom = -36;
-villageSun.shadow.camera.far = 60;
-villageScene.add(villageAmbient, villageSun);
+villageSun.shadow.camera.far = 70;
+villageSun.shadow.bias = -0.0015;
+const villageBounce = new THREE.PointLight('#ff9d52', 0.5, 30, 2);
+villageBounce.position.set(0, 4, 0);
+villageScene.add(villageAmbient, villageSun, villageBounce);
 
 const { village, buildings, totem, bounds } = buildVillage(villageScene);
+
+const villageComposer = makeComposer(villageScene, 0.42, 0.55, 0.7);
 
 let villageChar = null;
 let villageYaw = Math.PI;
@@ -138,20 +222,49 @@ function tryInteract() {
 }
 
 // ============================================================
-// CENA: Árvore de habilidades
+// CENA: Árvore de habilidades — vazio místico estrelado
 // ============================================================
 const skillScene = new THREE.Scene();
-skillScene.background = new THREE.Color('#0a0a0f');
-skillScene.fog = new THREE.Fog('#0a0a0f', 10, 30);
-const skillAmbient = new THREE.AmbientLight('#445', 0.9);
-const skillKey = new THREE.PointLight('#facc15', 1.6, 30);
+skillScene.background = new THREE.Color('#080810');
+skillScene.fog = new THREE.Fog('#080810', 11, 28);
+const skillAmbient = new THREE.AmbientLight('#5a5570', 0.6);
+const skillKey = new THREE.PointLight('#facc15', 1.8, 32, 2);
 skillKey.position.set(0, 6, 6);
-skillScene.add(skillAmbient, skillKey);
+const skillFill = new THREE.PointLight('#7c5cff', 1.1, 26, 2);
+skillFill.position.set(-6, 3, -4);
+skillScene.add(skillAmbient, skillKey, skillFill);
+
+const starGeo = new THREE.BufferGeometry();
+const starCount = 600;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  const r = 30 + Math.random() * 30;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos((Math.random() * 2) - 1);
+  starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+  starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.6 + 2;
+  starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: '#fff6da', size: 0.18, transparent: true, opacity: 0.85, sizeAttenuation: true }));
+skillScene.add(stars);
+
+const skillGround = new THREE.Mesh(
+  new THREE.CircleGeometry(14, 32),
+  new THREE.MeshStandardMaterial({ color: '#15141f', roughness: 0.9 })
+);
+skillGround.rotation.x = -Math.PI / 2;
+skillGround.position.y = -3;
+skillGround.receiveShadow = true;
+skillScene.add(skillGround);
+
 let skillTreeData = null;
 let skillCamYaw = 0;
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 let hoveredNode = null;
+
+const skillComposer = makeComposer(skillScene, 0.85, 0.25, 0.85);
 
 function buildSkillSceneFor(cfg) {
   if (skillTreeData) skillScene.remove(skillTreeData.group);
@@ -259,17 +372,19 @@ function syncLevelUI() {
 const clock = new THREE.Clock();
 
 function updateCreator(dt) {
-  const radius = 3.4;
-  creatorCamera.position.set(Math.sin(creatorYaw) * radius, 1.6, Math.cos(creatorYaw) * radius);
+  const radius = 3.3;
+  creatorCamera.position.set(Math.sin(creatorYaw) * radius, 1.55, Math.cos(creatorYaw) * radius);
   creatorCamera.lookAt(0, 1.0, 0);
   if (creatorChar) {
     creatorChar.rotation.y += dt * 0.25;
   }
-  renderer.render(creatorScene, creatorCamera);
+  creatorComposer.render();
 }
 
 const moveDir = new THREE.Vector3();
 const camOffset = new THREE.Vector3();
+const desiredCamPos = new THREE.Vector3();
+let camInit = false;
 
 function updateVillage(dt) {
   let forward = 0, strafe = 0;
@@ -306,11 +421,13 @@ function updateVillage(dt) {
     animateCharacter(villageChar, dt, playerSpeed);
   }
 
-  camOffset.set(Math.sin(villageYaw) * -5.2, 2.6 + villagePitch * 4, Math.cos(villageYaw) * -5.2);
-  camera.position.set(playerPos.x + camOffset.x, 1.4 + camOffset.y, playerPos.z + camOffset.z);
+  camOffset.set(Math.sin(villageYaw) * -5.4, 2.7 + villagePitch * 4, Math.cos(villageYaw) * -5.4);
+  desiredCamPos.set(playerPos.x + camOffset.x, 1.4 + camOffset.y, playerPos.z + camOffset.z);
+  if (!camInit) { camera.position.copy(desiredCamPos); camInit = true; }
+  else camera.position.lerp(desiredCamPos, Math.min(1, dt * 9));
   camera.lookAt(playerPos.x, 1.3, playerPos.z);
 
-  spinTotemGlow(dt);
+  animateAmbience(dt);
 
   const distTotem = playerPos.distanceTo(new THREE.Vector3(totem.position.x, 0, totem.position.z));
   document.getElementById('prompt-interact').classList.toggle('hidden', distTotem > 3.2);
@@ -328,22 +445,35 @@ function updateVillage(dt) {
     buildingLabel.classList.add('hidden');
   }
 
-  renderer.render(villageScene, camera);
+  villageComposer.render();
 }
 
-let totemT = 0;
-function spinTotemGlow(dt) {
-  totemT += dt;
-  totem.rotation.y += dt * 0.15;
+let ambienceT = 0;
+function animateAmbience(dt) {
+  ambienceT += dt;
+  totem.rotation.y += dt * 0.1;
+  if (totem.userData.sparks) {
+    totem.userData.sparks.children.forEach((sp, i) => {
+      sp.position.y = sp.userData.baseY + Math.sin(ambienceT * 1.2 + sp.userData.phase) * 0.3;
+      sp.material.opacity = 0.5 + Math.sin(ambienceT * 2 + sp.userData.phase) * 0.4;
+    });
+  }
+  buildings.forEach((b, i) => {
+    if (b.userData.torchFlame) {
+      const flick = 1 + Math.sin(ambienceT * 9 + i * 3.1) * 0.18 + Math.sin(ambienceT * 23 + i) * 0.08;
+      b.userData.torchFlame.scale.setScalar(flick);
+    }
+  });
 }
 
 function updateSkillTree(dt) {
-  if (skillTreeData) spinTree(skillTreeData.group, dt);
+  if (skillTreeData) spinTree(skillTreeData.group, dt, skillTreeData.nodes);
   skillCamYaw += dt * 0.05;
   const r = 9;
   camera.position.set(Math.sin(skillCamYaw) * r, 2.6, Math.cos(skillCamYaw) * r);
   camera.lookAt(0, 1.5, 0);
-  renderer.render(skillScene, camera);
+  stars.rotation.y += dt * 0.004;
+  skillComposer.render();
 }
 
 function loop() {

@@ -54,18 +54,31 @@ function makeNode(position, color, data) {
   const g = new THREE.Group();
   g.position.copy(position);
 
-  const geo = new THREE.IcosahedronGeometry(0.42, 1);
-  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.35, metalness: 0.3 });
+  const geo = new THREE.IcosahedronGeometry(0.4, 1);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color, emissive: color, emissiveIntensity: 0.35,
+    roughness: 0.15, metalness: 0.05,
+    transmission: 0.45, thickness: 0.6, clearcoat: 0.6, clearcoatRoughness: 0.2
+  });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = true;
   g.add(mesh);
 
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.16, 0),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.1 })
+  );
+  g.add(core);
+
   const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.58, 0.035, 8, 24),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 })
+    new THREE.TorusGeometry(0.56, 0.03, 8, 28),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.7, metalness: 0.6, roughness: 0.3 })
   );
   ring.rotation.x = Math.PI / 2;
   g.add(ring);
+
+  const nodeLight = new THREE.PointLight(color, 0.9, 3.2, 2);
+  g.add(nodeLight);
 
   const label = nodeLabel(data.nome, data.efeito, color);
   label.position.set(0, 0.95, 0);
@@ -76,7 +89,7 @@ function makeNode(position, color, data) {
   lvlBadge.position.set(0, -0.85, 0);
   g.add(lvlBadge);
 
-  g.userData = { mesh, ring, mat, ...data };
+  g.userData = { mesh, ring, core, mat, light: nodeLight, ...data };
   return g;
 }
 
@@ -166,15 +179,26 @@ export function updateNodeStates(nodes, level) {
   nodes.forEach(n => {
     const unlocked = level >= n.userData.level;
     const mat = n.userData.mat;
-    mat.emissiveIntensity = unlocked ? 0.85 : 0.12;
-    mat.opacity = 1;
-    const scale = unlocked ? 1 : 0.78;
+    mat.emissiveIntensity = unlocked ? 0.55 : 0.08;
+    mat.transmission = unlocked ? 0.45 : 0.7;
+    n.userData.core.material.emissiveIntensity = unlocked ? 1.3 : 0.25;
+    n.userData.light.intensity = unlocked ? 1.1 : 0.15;
+    const scale = unlocked ? 1 : 0.76;
     n.userData.mesh.scale.setScalar(scale);
     n.userData.ring.scale.setScalar(scale);
     n.userData.unlocked = unlocked;
   });
 }
 
-export function spinTree(group, dt) {
+export function spinTree(group, dt, nodes) {
   group.rotation.y += dt * 0.06;
+  if (nodes) {
+    const t = performance.now() * 0.001;
+    nodes.forEach((n, i) => {
+      n.userData.mesh.rotation.y += dt * 0.4;
+      n.userData.mesh.rotation.x += dt * 0.15;
+      if (n.userData.baseY === undefined) n.userData.baseY = n.position.y;
+      n.position.y = n.userData.baseY + Math.sin(t * 1.4 + i) * 0.08;
+    });
+  }
 }
